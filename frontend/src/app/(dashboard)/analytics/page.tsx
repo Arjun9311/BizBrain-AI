@@ -110,6 +110,63 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* KPI Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-205 dark:border-slate-800">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Revenue Growth</span>
+          <div className="flex items-baseline gap-2 mt-1.5">
+            <h4 className="text-xl font-bold text-slate-800 dark:text-white">+24.8%</h4>
+            <span className="text-[10px] text-emerald-500 font-bold">vs Q1</span>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">Acquisition run rate pacing above target</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-205 dark:border-slate-800">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Sales Growth</span>
+          <div className="flex items-baseline gap-2 mt-1.5">
+            <h4 className="text-xl font-bold text-slate-800 dark:text-white">+18.2%</h4>
+            <span className="text-[10px] text-emerald-500 font-bold">vs last month</span>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">Lead volume boosted by CRM automations</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-205 dark:border-slate-800">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Customer Growth</span>
+          <div className="flex items-baseline gap-2 mt-1.5">
+            <h4 className="text-xl font-bold text-slate-800 dark:text-white">+12.4%</h4>
+            <span className="text-[10px] text-emerald-500 font-bold">MoM net increase</span>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">35 new corporate ledgers initialized</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-205 dark:border-slate-800">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Profit Margin</span>
+          <div className="flex items-baseline gap-2 mt-1.5">
+            <h4 className="text-xl font-bold text-slate-800 dark:text-white">32.6%</h4>
+            <span className="text-[10px] text-emerald-500 font-bold">Stable</span>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">Operating expense limits preserved</p>
+        </div>
+      </div>
+
+      {/* AI Intelligence recommendations */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950 p-6 rounded-2xl border border-blue-500/10 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 text-blue-500/10 pointer-events-none">
+          <Sparkles className="w-24 h-24" />
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="p-1.5 bg-blue-500/20 text-blue-400 rounded-lg animate-pulse">
+            <Sparkles className="w-4 h-4" />
+          </span>
+          <h3 className="font-bold text-xs uppercase tracking-wider text-blue-400">BizBrain AI Business Insights</h3>
+        </div>
+        <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
+          Based on predictive analysis of your sales history and expense patterns, Q3 revenue is forecasted to hit <strong className="text-emerald-400">$24,500</strong> with a profit margin of <strong className="text-emerald-400">34.2%</strong>. 
+          Stock turnover rate has increased to <strong className="text-white">4.8x</strong>, primarily driven by core accessories cataloged in the West Wing Depot. 
+          We recommend increasing order velocity of top-performing SKUs by <strong className="text-blue-400">15%</strong> to mitigate forecasted demand surges.
+        </p>
+      </div>
+
       {/* Primary Analytics Charts Container */}
       {timeframe === 'monthly' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

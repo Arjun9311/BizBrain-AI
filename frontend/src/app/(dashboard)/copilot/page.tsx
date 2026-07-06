@@ -71,6 +71,33 @@ export default function CopilotPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Load chat history from DB
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch('http://localhost:5000/api/ai/copilot/history', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const formatted = data.map((h: any) => ({
+              id: h.id,
+              role: h.role,
+              message: h.message,
+              timestamp: new Date(h.createdAt)
+            }));
+            setMessages(prev => [prev[0], ...formatted]);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch chat history:', err);
+      }
+    };
+    loadHistory();
+  }, [token]);
+
   const handleSendMessage = async (textToSend: string, fileAttached = attachedFile) => {
     const text = textToSend.trim();
     if (!text && !fileAttached) return;

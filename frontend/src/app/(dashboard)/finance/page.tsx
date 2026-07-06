@@ -123,11 +123,37 @@ export default function FinancePage() {
     }
   };
 
-  // Tax calculations
+  // Tax calculations & Helpers
   const totalInvoiced = invoices.reduce((sum, i) => sum + i.total, 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const gstCollected = invoices.reduce((sum, i) => sum + (i.total * 0.18 / 1.18), 0); // Back-calculated GST
   const netCashFlow = totalInvoiced - totalExpenses;
+
+  const downloadInvoicesCSV = () => {
+    let csv = 'Invoice #,Client Name,Issue Date,Due Date,Total Amount,Status,Payment Method\n';
+    invoices.forEach(inv => {
+      csv += `${inv.invoiceNumber},"${inv.customer?.name || 'Client'}",${new Date(inv.issueDate).toLocaleDateString()},${new Date(inv.dueDate).toLocaleDateString()},${inv.total},${inv.status},${inv.paymentMethod}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'invoices_report.csv');
+    a.click();
+  };
+
+  const downloadExpensesCSV = () => {
+    let csv = 'Expense ID,Title,Amount,Category,Date,Status,Reference No\n';
+    expenses.forEach(exp => {
+      csv += `${exp.id},"${exp.title}",${exp.amount},${exp.category},${new Date(exp.date).toLocaleDateString()},${exp.status},${exp.referenceNo || 'N/A'}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'expenses_report.csv');
+    a.click();
+  };
 
   return (
     <div className="space-y-6 select-none">
@@ -185,6 +211,22 @@ export default function FinancePage() {
         </div>
       </div>
 
+      {/* AI Financial Advisor Suggestions */}
+      <div className="bg-gradient-to-br from-blue-900/10 via-slate-900 to-slate-950 p-4 border border-blue-500/15 rounded-xl flex gap-3 text-xs relative overflow-hidden">
+        <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl h-fit">
+          <AlertCircle className="w-4 h-4" />
+        </div>
+        <div>
+          <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+            BizBrain Financial Advisor Insights <span className="px-1.5 py-0.5 bg-blue-500/25 text-blue-400 text-[8px] rounded uppercase font-bold tracking-wide">Autonomous</span>
+          </h4>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 leading-relaxed text-[11px]">
+            Your current Net Cash Flow is positive at <strong className="text-emerald-500">${netCashFlow.toLocaleString()}</strong>. However, outstanding accounts receivables on invoices equal <strong className="text-amber-500">${invoices.filter(i => i.status === 'UNPAID').reduce((s,i) => s+i.total, 0).toLocaleString()}</strong>.
+            We recommend triggering SMS notifications for unpaid invoices or implementing early payment discount terms (e.g. 2/10 net 30) to increase liquid capital reserves.
+          </p>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         <button
@@ -222,6 +264,29 @@ export default function FinancePage() {
       {/* Active tab contents */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl shadow-slate-100/40 dark:shadow-none">
         
+        {/* Table Toolbar Header with Exporters */}
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 shrink-0">
+          <h3 className="font-bold text-xs uppercase text-slate-400 tracking-wider">
+            {activeTab === 'invoices' ? 'Invoiced Accounts' : activeTab === 'expenses' ? 'Expense Audits' : 'GST Declarations'}
+          </h3>
+          {activeTab === 'invoices' && (
+            <button
+              onClick={downloadInvoicesCSV}
+              className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 rounded-lg text-[10px] font-bold transition-all"
+            >
+              Export CSV Report
+            </button>
+          )}
+          {activeTab === 'expenses' && (
+            <button
+              onClick={downloadExpensesCSV}
+              className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 rounded-lg text-[10px] font-bold transition-all"
+            >
+              Export CSV Report
+            </button>
+          )}
+        </div>
+
         {/* 1. Invoices tab */}
         {activeTab === 'invoices' && (
           <div className="overflow-x-auto">

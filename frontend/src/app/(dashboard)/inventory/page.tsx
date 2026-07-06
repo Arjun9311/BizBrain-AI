@@ -42,6 +42,7 @@ export default function InventoryPage() {
   
   const [movements, setMovements] = useState<Movement[]>([]);
   const [reorders, setReorders] = useState<ReorderAdvice[]>([]);
+  const [expiryAlerts, setExpiryAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Manual movement adjustments state
@@ -64,15 +65,20 @@ export default function InventoryPage() {
       const prodRes = await fetch('http://localhost:5000/api/products', {
         headers: { Authorization: `Bearer ${token}` }
       });
+      const expiryRes = await fetch('http://localhost:5000/api/inventory/expiry', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-      if (moveRes.ok && forecastRes.ok && prodRes.ok) {
+      if (moveRes.ok && forecastRes.ok && prodRes.ok && expiryRes.ok) {
         const moves = await moveRes.json();
         const fore = await forecastRes.json();
         const prods = await prodRes.json();
+        const expiry = await expiryRes.json();
         
         setMovements(moves);
         setReorders(fore);
         setProducts(prods);
+        setExpiryAlerts(expiry);
         if (prods.length > 0) {
           setSelectedProductId(prods[0].id);
         }
@@ -274,6 +280,47 @@ export default function InventoryPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Expiry Alerts Watchlist */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-100/50 dark:shadow-none">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-slate-800 dark:text-white">Expiry Alerts Watchlist</h3>
+              <span className="px-2 py-0.5 bg-rose-500/15 text-rose-500 rounded text-[10px] font-bold uppercase tracking-wider">
+                {expiryAlerts.length} issues active
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="text-xs text-slate-500 animate-pulse">Checking shelf dates...</div>
+            ) : expiryAlerts.length === 0 ? (
+              <div className="p-4 bg-slate-50 dark:bg-slate-950/40 rounded-xl text-center text-xs text-slate-400 border border-slate-100 dark:border-slate-800">
+                No items near expiry.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {expiryAlerts.map(alert => (
+                  <div key={alert.id} className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex justify-between items-center text-xs">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">{alert.name}</h4>
+                      <p className="text-[10px] text-slate-500 mt-1">SKU: {alert.sku}</p>
+                    </div>
+                    <div className="text-right">
+                      {alert.daysLeft < 0 ? (
+                        <span className="px-2 py-0.5 bg-red-500/10 text-red-500 rounded font-bold uppercase text-[9px]">
+                          EXPIRED ({-alert.daysLeft} days ago)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded font-bold uppercase text-[9px]">
+                          Expires in {alert.daysLeft} days
+                        </span>
+                      )}
+                      <p className="text-[10px] text-slate-500 mt-1">Date: {new Date(alert.expiryDate).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

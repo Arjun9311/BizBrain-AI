@@ -158,10 +158,25 @@ export default function ProductsPage() {
     setWarehouse('Main Warehouse');
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter and Pagination States
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
+  const [selectedWarehouseFilter, setSelectedWarehouseFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const categoriesList = Array.from(new Set(products.map(p => p.category?.name).filter(Boolean)));
+  const warehousesList = Array.from(new Set(products.map(p => p.warehouse).filter(Boolean)));
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = selectedCategoryFilter ? (p.category?.name === selectedCategoryFilter) : true;
+    const matchesWarehouse = selectedWarehouseFilter ? (p.warehouse === selectedWarehouseFilter) : true;
+    return matchesSearch && matchesCategory && matchesWarehouse;
+  });
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="space-y-6 select-none">
@@ -227,16 +242,49 @@ export default function ProductsPage() {
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl shadow-slate-100/40 dark:shadow-none">
         
         {/* Search tool */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <div className="relative w-80">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="relative w-full sm:w-80">
             <Search className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none w-4 h-4 text-slate-400" />
             <input
               type="text"
               placeholder="Search by name, SKU..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-9 pr-3 py-1.5 bg-slate-100 dark:bg-slate-950 border-none rounded-lg text-xs outline-none text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 transition-all"
             />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={selectedCategoryFilter}
+              onChange={(e) => {
+                setSelectedCategoryFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200"
+            >
+              <option value="">All Categories</option>
+              {categoriesList.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+
+            <select
+              value={selectedWarehouseFilter}
+              onChange={(e) => {
+                setSelectedWarehouseFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200"
+            >
+              <option value="">All Warehouses</option>
+              {warehousesList.map(wh => (
+                <option key={wh} value={wh}>{wh}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -260,12 +308,12 @@ export default function ProductsPage() {
                 <tr>
                   <td colSpan={9} className="p-8 text-center text-slate-500">Loading products...</td>
                 </tr>
-              ) : filteredProducts.length === 0 ? (
+              ) : paginatedProducts.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="p-8 text-center text-slate-500">No products registered yet.</td>
                 </tr>
               ) : (
-                filteredProducts.map(p => {
+                paginatedProducts.map(p => {
                   const isLow = p.stock <= p.minStock;
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 text-slate-700 dark:text-slate-350 transition-colors">
@@ -314,6 +362,32 @@ export default function ProductsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Toolbar */}
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <span className="text-slate-500">
+            Showing {filteredProducts.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} entries
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded shadow disabled:opacity-40 text-slate-700 dark:text-slate-300 font-bold transition-all"
+            >
+              Previous
+            </button>
+            <span className="px-2 font-semibold text-slate-700 dark:text-slate-300">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded shadow disabled:opacity-40 text-slate-700 dark:text-slate-300 font-bold transition-all"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 

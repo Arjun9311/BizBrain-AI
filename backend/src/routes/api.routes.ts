@@ -952,6 +952,46 @@ router.post('/settings', authMiddleware, async (req: AuthenticatedRequest, res) 
 });
 
 
+// Chat history fetcher
+router.get('/ai/copilot/history', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const businessId = req.user?.businessId!;
+  try {
+    const history = await prisma.chatHistory.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'asc' },
+      take: 50,
+    });
+    return res.json(history.map(h => ({
+      id: h.id,
+      role: h.role,
+      message: h.message,
+      createdAt: h.createdAt
+    })));
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Product expiry alerts
+router.get('/inventory/expiry', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const businessId = req.user?.businessId!;
+  try {
+    const today = new Date();
+    const soon = new Date(today.getTime() + 20 * 24 * 60 * 60 * 1000);
+    const expired = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
+
+    const simulatedExpiry = [
+      { id: 'exp-1', name: 'BizPro Laptop 16" (Spare Battery)', sku: 'PRO-LAP-16-BAT', expiryDate: soon.toISOString(), daysLeft: 20, status: 'WARNED' },
+      { id: 'exp-2', name: 'Logitech USB Wireless receiver', sku: 'ACC-REC-USB', expiryDate: expired.toISOString(), daysLeft: -5, status: 'EXPIRED' }
+    ];
+
+    return res.json(simulatedExpiry);
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
 // ==========================================
 // 11. AI COPILOT SERVICE (/api/ai)
 // ==========================================
