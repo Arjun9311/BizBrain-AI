@@ -79,11 +79,52 @@ To run the platform on PostgreSQL:
 
 ---
 
-## 🐋 Running in Docker
-To orchestrate containerized builds:
+## 🟢 Running & Deploying Natively (Node.js)
+
+Since migrating from Docker to native Node.js, we use standard npm scripts and PM2 to manage build/run states.
+
+### Native Scripts (Root Directory)
+We've configured several scripts in the root [package.json](package.json) to make local management and cloud deployment straightforward:
+
+* **Install all dependencies** (Root, Backend, and Frontend):
+  ```bash
+  npm run install-all
+  ```
+* **Database Setup & Seed** (Prisma DB Push + Populate Sample Data):
+  ```bash
+  npm run db-setup
+  ```
+* **Build both Frontend & Backend**:
+  ```bash
+  npm run build-all
+  ```
+* **Run in Development Mode** (Concurrently starts backend on `5000` and frontend on `3000` with hot-reload):
+  ```bash
+  npm run dev
+  ```
+* **Start Backend (Production Mode)**:
+  ```bash
+  npm run start-backend
+  ```
+* **Start Frontend (Production Mode)**:
+  ```bash
+  npm run start-frontend
+  ```
+
+### Production Deployment using PM2
+For continuous production hosting on VPS, cloud servers, or native environments, install PM2 globally:
 ```bash
-docker-compose up --build
+npm install -g pm2
 ```
-This boots:
-- Express backend container on `http://localhost:5000`
-- Next.js frontend container on `http://localhost:3000`
+
+Start both the API backend and Next.js frontend concurrently in the background:
+```bash
+pm2 start ecosystem.config.js
+```
+
+Useful PM2 Commands:
+* Check status: `pm2 status`
+* Monitor logs: `pm2 logs`
+* Restart all processes: `pm2 restart all`
+* Stop all processes: `pm2 stop all`
+
