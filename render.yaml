@@ -1,0 +1,38 @@
+services:
+  # Backend API Service
+  - type: web
+    name: bizbrain-api
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run prisma:generate && npm run prisma:db-push && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        value: file:./prisma/dev.db
+      - key: GEMINI_API_KEY
+        sync: false
+    disk:
+      name: sqlite-disk
+      mountPath: /opt/render/project/src/backend/prisma
+      sizeGB: 1
+
+  # Frontend Next.js Web Service
+  - type: web
+    name: bizbrain-frontend
+    env: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: ${BIZBRAIN_API_URL}/api
