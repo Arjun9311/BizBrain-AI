@@ -6,6 +6,27 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database with BizBrain sample data...');
 
+  // Clear existing database records to make the seed script idempotent
+  await prisma.aIRequest.deleteMany({});
+  await prisma.chatHistory.deleteMany({});
+  await prisma.settings.deleteMany({});
+  await prisma.notification.deleteMany({});
+  await prisma.report.deleteMany({});
+  await prisma.leave.deleteMany({});
+  await prisma.attendance.deleteMany({});
+  await prisma.employee.deleteMany({});
+  await prisma.department.deleteMany({});
+  await prisma.payment.deleteMany({});
+  await prisma.invoice.deleteMany({});
+  await prisma.orderItem.deleteMany({});
+  await prisma.order.deleteMany({});
+  await prisma.inventoryMovement.deleteMany({});
+  await prisma.product.deleteMany({});
+  await prisma.supplier.deleteMany({});
+  await prisma.category.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.business.deleteMany({});
+
   // 1. Create Business
   const business = await prisma.business.create({
     data: {
