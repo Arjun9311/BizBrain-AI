@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { 
   Settings, 
@@ -32,6 +32,38 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Fetch settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch('http://localhost:5000/api/settings', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.business) {
+            setBName(data.business.name || '');
+            setGstNum(data.business.gstNumber || '');
+            setAddress(data.business.address || '');
+          }
+          if (data.settings && Array.isArray(data.settings)) {
+            for (const item of data.settings) {
+              if (item.key === 'gemini_api_key') {
+                setGeminiKey(item.value || '');
+              } else if (item.key === 'ai_custom_rules') {
+                setAiRules(item.value || '');
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    };
+    fetchSettings();
+  }, [token]);
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -50,7 +82,8 @@ export default function SettingsPage() {
           address,
           settingsArray: [
             { key: 'api_mode', value: geminiKey ? 'live' : 'mock_fallback' },
-            { key: 'ai_custom_rules', value: aiRules }
+            { key: 'ai_custom_rules', value: aiRules },
+            { key: 'gemini_api_key', value: geminiKey }
           ]
         })
       });

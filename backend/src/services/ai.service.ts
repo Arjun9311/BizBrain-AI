@@ -3,10 +3,13 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export class AIService {
   private static genAI: GoogleGenerativeAI | null = null;
 
-  private static getClient() {
-    const apiKey = process.env.GEMINI_API_KEY;
+  private static getClient(customApiKey?: string) {
+    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.trim() === '') {
       return null;
+    }
+    if (customApiKey) {
+      return new GoogleGenerativeAI(customApiKey);
     }
     if (!this.genAI) {
       this.genAI = new GoogleGenerativeAI(apiKey);
@@ -14,12 +17,16 @@ export class AIService {
     return this.genAI;
   }
 
-  public static async generateText(prompt: string, context?: string): Promise<string> {
-    const client = this.getClient();
+  public static async generateText(prompt: string, context?: string, customApiKey?: string): Promise<string> {
+    const client = this.getClient(customApiKey);
 
     if (!client) {
       console.log('Gemini API Key missing or empty. Using rule-based fallback response engine.');
-      return this.getFallbackResponse(prompt, context);
+      const fallback = this.getFallbackResponse(prompt, context);
+      if (prompt.toLowerCase().includes('html') || prompt.toLowerCase().includes('styled html page')) {
+        return this.customizeHtmlTemplate(fallback, prompt);
+      }
+      return fallback;
     }
 
     try {
@@ -38,13 +45,74 @@ ${prompt}`
       return response.text();
     } catch (error: any) {
       console.error('Error contacting Gemini API:', error.message);
-      return `[API Error - falling back to Local AI Simulator] ${await this.getFallbackResponse(prompt, context)}`;
+      const fallback = this.getFallbackResponse(prompt, context);
+      if (prompt.toLowerCase().includes('html') || prompt.toLowerCase().includes('styled html page')) {
+        return this.customizeHtmlTemplate(fallback, prompt);
+      }
+      return fallback;
     }
   }
 
   private static getFallbackResponse(prompt: string, context?: string): string {
     const p = prompt.toLowerCase();
     
+    // Parse context if available
+    let productsCount = "5";
+    let alertsCount = "2";
+    let customerCount = "4";
+    let revenueSum = "4,679.93";
+    let businessName = "BizBrain HQ";
+
+    if (context) {
+      const nameMatch = context.match(/The business name is "([^"]+)"/);
+      if (nameMatch) businessName = nameMatch[1];
+
+      const prodMatch = context.match(/Products cataloged:\s*(\d+)/i);
+      if (prodMatch) productsCount = prodMatch[1];
+
+      const alertMatch = context.match(/Products below warning min limit:\s*(\d+)/i);
+      if (alertMatch) alertsCount = alertMatch[1];
+
+      const custMatch = context.match(/Active clients:\s*(\d+)/i);
+      if (custMatch) customerCount = custMatch[1];
+
+      const revMatch = context.match(/Total invoiced revenue:\s*\$([0-9.,]+)/i);
+      if (revMatch) revenueSum = revMatch[1];
+    }
+
+    // Specific metric queries
+    if (p.includes('how many products') || p.includes('number of products') || p.includes('total products') || p.includes('cataloged')) {
+      return `We currently have **${productsCount}** products cataloged in our inventory system for **${businessName}**.`;
+    }
+
+    if (p.includes('revenue') || p.includes('total sales') || p.includes('sales revenue') || p.includes('how much money') || p.includes('invoiced')) {
+      return `The total invoiced sales revenue for **${businessName}** is currently **$${revenueSum}**.`;
+    }
+
+    if (p.includes('customer') || p.includes('client') || p.includes('crm') || p.includes('profiles')) {
+      if (p.includes('risk') || p.includes('loyalty') || p.includes('acme')) {
+        // Fall through to CRM insights
+      } else {
+        return `We currently have **${customerCount}** active customer profiles registered in our CRM database.`;
+      }
+    }
+
+    if (p.includes('low stock') || p.includes('warning limit') || p.includes('min limit') || p.includes('shortage') || p.includes('stock warnings')) {
+      if (p.includes('reorder') || p.includes('what to') || p.includes('recommend')) {
+        // Fall through to inventory recommendations
+      } else {
+        return `There are currently **${alertsCount}** products that have fallen below their minimum stock warning threshold.`;
+      }
+    }
+
+    if (p.includes('tax') || p.includes('gst') || p.includes('vat')) {
+      return `The system is configured with a standard tax rate of **18.0% GST** and the primary currency is set to **USD**.`;
+    }
+
+    if (p.includes('hello') || p.includes('hi') || p.includes('who are you') || p.includes('what is your name')) {
+      return `Hello! I am your **BizBrain Intelligent Business Copilot**. I have analyzed your system ledger data for **${businessName}**.\n\nI can write supplier emails, predict sales, find stock shortages, or draft business plans. How can I help you manage your business today?`;
+    }
+
     // Website HTML Generator Fallbacks
     if (p.includes('html') || p.includes('styled html page')) {
       if (p.includes('about')) {
@@ -351,13 +419,98 @@ contact@bizbrain.ai`;
 
     // Default chat fallback
     return `### BizBrain Copilot Response
-Hello! I am your Intelligent Business Copilot. I have analyzed your system data for **BizBrain HQ**. 
+Hello! I am your Intelligent Business Copilot. I have analyzed your system data for **${businessName}**. 
 
-Here are the quick highlights:
-- You have **2 products** below minimum stock alerts (BizPro Laptop and MX Mouse).
-- One invoice is currently **overdue** (Acme Corporation, $908.58).
-- Total sales revenue is **$4,679.93** with **$3,869.95** outstanding in receivables.
+Here are the quick highlights based on our records:
+- Products Cataloged: **${productsCount}**
+- Stock Warnings: **${alertsCount}** products below minimum stock limits
+- Active Clients: **${customerCount}** CRM profiles
+- Total Revenue: **$${revenueSum}**
 
-How can I help you manage your business today? I can write emails, forecast revenues, draft SWOT charts, or help automate inventory.`;
+To ask complex, open-ended questions like "${prompt}" and get custom AI responses, please go to **Platform Configuration** in settings and enter a valid **Gemini AI API Key**.`;
+  }
+
+  private static customizeHtmlTemplate(template: string, prompt: string): string {
+    const p = prompt.toLowerCase();
+    let customized = template;
+
+    // 1. Color Theme / Accent Color detection
+    let accentColor = 'blue';
+    if (p.includes('emerald') || p.includes('green') || p.includes('organic') || p.includes('mint') || p.includes('lime')) {
+      accentColor = 'emerald';
+    } else if (p.includes('rose') || p.includes('red') || p.includes('crimson') || p.includes('danger') || p.includes('cherry')) {
+      accentColor = 'rose';
+    } else if (p.includes('cyan') || p.includes('teal') || p.includes('ocean')) {
+      accentColor = 'cyan';
+    } else if (p.includes('purple') || p.includes('violet') || p.includes('neon') || p.includes('cyber') || p.includes('robotic')) {
+      accentColor = 'purple';
+    } else if (p.includes('amber') || p.includes('orange') || p.includes('yellow') || p.includes('sunset')) {
+      accentColor = 'amber';
+    } else if (p.includes('indigo') || p.includes('navy')) {
+      accentColor = 'indigo';
+    }
+
+    if (accentColor !== 'blue') {
+      customized = customized.replace(/\bblue-(\d{2,3})\b/g, `${accentColor}-$1`);
+      customized = customized.replace(/\bblue\/(\d{2,3})\b/g, `${accentColor}/$1`);
+    }
+
+    // 2. Dark/Light Mode detection
+    const wantsLight = p.includes('light') || p.includes('light mode') || p.includes('white background') || p.includes('bright') || p.includes('clean') || p.includes('white');
+    const wantsDark = p.includes('dark') || p.includes('dark mode') || p.includes('black') || p.includes('slate-950') || p.includes('cyber') || p.includes('night');
+
+    if (wantsLight) {
+      customized = customized.replace(/bg-slate-950/g, 'bg-slate-50');
+      customized = customized.replace(/bg-slate-900/g, 'bg-white');
+      customized = customized.replace(/bg-slate-800/g, 'bg-slate-100');
+      customized = customized.replace(/text-white/g, 'text-slate-900');
+      customized = customized.replace(/text-slate-400/g, 'text-slate-650');
+      customized = customized.replace(/border-slate-800/g, 'border-slate-200');
+      customized = customized.replace(/border-slate-900/g, 'border-slate-200');
+    } else if (wantsDark) {
+      customized = customized.replace(/bg-white/g, 'bg-slate-900');
+      customized = customized.replace(/bg-slate-50/g, 'bg-slate-950');
+      customized = customized.replace(/text-slate-900/g, 'text-white');
+      customized = customized.replace(/text-slate-650/g, 'text-slate-400');
+      customized = customized.replace(/border-slate-200/g, 'border-slate-800');
+    }
+
+    // 3. Title / Copy Customization
+    let businessName = "BizBrain HQ";
+    let titleText = "";
+
+    const forMatch = prompt.match(/for\s+(?:an?\s+)?([^,.]+)/i);
+    if (forMatch && forMatch[1]) {
+      const topic = forMatch[1].trim();
+      businessName = topic.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      
+      if (businessName.toLowerCase().endsWith('page')) {
+        businessName = businessName.slice(0, -4).trim();
+      }
+      titleText = businessName;
+    }
+
+    if (businessName !== "BizBrain HQ") {
+      customized = customized.replace(/BIZBRAIN HQ/g, businessName.toUpperCase());
+      customized = customized.replace(/BizBrain HQ/g, businessName);
+      
+      if (titleText) {
+        customized = customized.replace(/Unlock Hyper-Growth for Your SME Business/g, `Experience the Future of ${businessName}`);
+        customized = customized.replace(/Our Vision & Mission/g, `Our ${businessName} Vision`);
+        customized = customized.replace(/Get in Touch/g, `Connect with ${businessName}`);
+        customized = customized.replace(/Featured Hardware Inventory/g, `Our Exclusive ${businessName} Collection`);
+        customized = customized.replace(/FAQ Center/g, `${businessName} FAQ Center`);
+        customized = customized.replace(/BizBrain ERP Blog/g, `${businessName} Journal & News`);
+      }
+    }
+
+    const quoteMatch = prompt.match(/"([^"]+)"/);
+    if (quoteMatch && quoteMatch[1]) {
+      const customBrand = quoteMatch[1];
+      customized = customized.replace(/BIZBRAIN HQ/g, customBrand.toUpperCase());
+      customized = customized.replace(/BizBrain HQ/g, customBrand);
+    }
+
+    return customized;
   }
 }

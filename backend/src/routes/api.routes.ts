@@ -1018,8 +1018,14 @@ router.post('/ai/copilot', authMiddleware, async (req: AuthenticatedRequest, res
 - Total invoiced revenue: $${revenueSum.toFixed(2)}
 - System context settings: Currency USD. Tax standard 18.0% GST.`;
 
+    // Fetch custom API key from settings
+    const apiKeySetting = await prisma.settings.findFirst({
+      where: { businessId, key: 'gemini_api_key' }
+    });
+    const customApiKey = apiKeySetting?.value || undefined;
+
     // Fetch response
-    const answer = await AIService.generateText(prompt, contextSummary);
+    const answer = await AIService.generateText(prompt, contextSummary, customApiKey);
 
     // Save chat logging
     await prisma.chatHistory.createMany({
@@ -1037,12 +1043,19 @@ router.post('/ai/copilot', authMiddleware, async (req: AuthenticatedRequest, res
 
 // Generator for PDF, invoices, landing pages
 router.post('/ai/generator', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const businessId = req.user?.businessId!;
   const { docType, prompt } = req.body; // docType: email, invoice, report, landing, swot
   const userPrompt = prompt || `Generate a ${docType}`;
 
   try {
+    // Fetch custom API key from settings
+    const apiKeySetting = await prisma.settings.findFirst({
+      where: { businessId, key: 'gemini_api_key' }
+    });
+    const customApiKey = apiKeySetting?.value || undefined;
+
     const context = `Task: Generate production ready text/structure for type: ${docType}`;
-    const outputText = await AIService.generateText(userPrompt, context);
+    const outputText = await AIService.generateText(userPrompt, context, customApiKey);
     
     return res.json({
       type: docType,
