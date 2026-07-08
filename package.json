@@ -10,7 +10,9 @@
     "build-all": "npm run build-backend && npm run build-frontend",
     "db-setup": "npm run prisma:db-push --prefix backend && npm run prisma:seed --prefix backend",
     "start-backend": "npm run start --prefix backend",
-    "start-frontend": "npm run start --prefix frontend"
+    "start-frontend": "npm run start --prefix frontend",
+    "build": "npm run build-frontend",
+    "start": "npm run start-frontend"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
